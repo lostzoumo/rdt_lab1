@@ -21,11 +21,12 @@
 #include "rdt_struct.h"
 #include "rdt_receiver.h"
 
-
+FILE *rlog;
 /* receiver initialization, called once at the very beginning */
 void Receiver_Init()
 {
     fprintf(stdout, "At %.2fs: receiver initializing ...\n", GetSimulationTime());
+    rlog=fopen("rlog.txt","w");
 }
 
 /* receiver finalization, called once at the very end.
@@ -36,7 +37,17 @@ void Receiver_Final()
 {
     fprintf(stdout, "At %.2fs: receiver finalizing ...\n", GetSimulationTime());
 }
-
+bool checksum(char odd,char even,char *pkt,int size)
+{
+    int checkodd=0,checkeven=0;
+    for(int i=1;i<size;i+=2){
+    	checkodd+=pkt[i];
+    }
+    for(int i=0;i<size;i+=2){
+    	checkeven+=pkt[i];
+    }
+    return ((checkodd && 0xFF)==odd) && ((checkeven && 0xFF)==even);
+}
 /* event handler, called when a packet is passed from the lower layer at the 
    receiver */
 void Receiver_FromLowerLayer(struct packet *pkt)
@@ -53,6 +64,11 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     /* sanity check in case the packet is corrupted */
     if (msg->size<0) msg->size=0;
     if (msg->size>RDT_PKTSIZE-header_size) msg->size=RDT_PKTSIZE-header_size;
+    char odd = pkt->data[3];
+    char even = pkt->data[4];
+
+    bool check=checksum(odd,even,pkt->data+header_size,RDT_PKTSIZE-header_size);
+    fprintf(rlog,"%s\n",check==true?"good":"corrupt");
 
     msg->data = (char*) malloc(msg->size);
     ASSERT(msg->data!=NULL);

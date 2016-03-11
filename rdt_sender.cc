@@ -26,6 +26,7 @@
 void Sender_Init()
 {
     fprintf(stdout, "At %.2fs: sender initializing ...\n", GetSimulationTime());
+    FILE *slog=fopen("slog.txt","w");
 }
 
 /* sender finalization, called once at the very end.
@@ -93,14 +94,14 @@ void Sender_FromUpperLayer(struct message *msg)
 	/* fill in the packet */
 	pkt.data[0] = msg->size-cursor;
 	pkt.data[1] = seqnum;
-	pkr.data[2] = 0;
+	pkt.data[2] = 0;
 	memcpy(pkt.data+header_size, msg->data+cursor, pkt.data[0]);
 	pkt.data[3] = checksum_odd(pkt.data+header_size,maxpayload_size);
 	pkt.data[4] = checksum_even(pkt.data+header_size,maxpayload_size);
 	/* send it out through the lower layer */
 	Sender_ToLowerLayer(&pkt);
     }
-
+}
 
 /* event handler, called when a packet is passed from the lower layer at the 
    sender */
