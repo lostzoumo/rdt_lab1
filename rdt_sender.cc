@@ -21,12 +21,12 @@
 #include "rdt_struct.h"
 #include "rdt_sender.h"
 
-
+FILE *slog;
 /* sender initialization, called once at the very beginning */
 void Sender_Init()
 {
     fprintf(stdout, "At %.2fs: sender initializing ...\n", GetSimulationTime());
-    FILE *slog=fopen("slog.txt","w");
+    slog=fopen("slog.txt","w");
 }
 
 /* sender finalization, called once at the very end.
@@ -36,6 +36,7 @@ void Sender_Init()
 void Sender_Final()
 {
     fprintf(stdout, "At %.2fs: sender finalizing ...\n", GetSimulationTime());
+    fclose(slog);
 }
 
 char checksum_odd(char *pkt,int num)
@@ -59,48 +60,47 @@ char checksum_even(char *pkt,int num)
    sender */
 void Sender_FromUpperLayer(struct message *msg)
 {
-    /* 1-byte header indicating the size of the payload */
-    int header_size = 5;
-
-    /* maximum payload size */
+    
+    int header_size = 6;
+    static int msgnum=0;
     int maxpayload_size = RDT_PKTSIZE - header_size;
 
-    /* split the message if it is too big */
 
-    /* reuse the same packet data structure */
     packet pkt;
 
-    /* the cursor always points to the first unsent byte in the message */
     int cursor = 0;
     int seqnum=1;
+    int tot=(msg->size+maxpayload_size-1)/maxpayload_size;
     while (msg->size-cursor > maxpayload_size) {
-	/* fill in the packet */
 	pkt.data[0] = maxpayload_size;
-	pkt.data[1] = seqnum;
-	pkt.data[2] = 0;
+	pkt.data[1] = msgnum%256;
+	pkt.data[2] = seqnum;
+	pkt.data[3] = tot;
 	memcpy(pkt.data+header_size, msg->data+cursor, maxpayload_size);
-	pkt.data[3] = checksum_odd(pkt.data+header_size,maxpayload_size);
-	pkt.data[4] = checksum_even(pkt.data+header_size,maxpayload_size);
-	/* send it out through the lower layer */
+	pkt.data[4] = checksum_odd(pkt.data+header_size,maxpayload_size);
+	pkt.data[5] = checksum_even(pkt.data+header_size,maxpayload_size);
 	Sender_ToLowerLayer(&pkt);
 
-	/* move the cursor */
 	cursor += maxpayload_size;
 	seqnum++;
     }
 
-    /* send out the last packet */
     if (msg->size > cursor) {
-	/* fill in the packet */
 	pkt.data[0] = msg->size-cursor;
-	pkt.data[1] = seqnum;
-	pkt.data[2] = 0;
+	pkt.data[1] = msgnum%256;
+	pkt.data[2] = seqnum;
+	pkt.data[3] = tot;
 	memcpy(pkt.data+header_size, msg->data+cursor, pkt.data[0]);
-	pkt.data[3] = checksum_odd(pkt.data+header_size,maxpayload_size);
-	pkt.data[4] = checksum_even(pkt.data+header_size,maxpayload_size);
-	/* send it out through the lower layer */
+	pkt.data[4] = checksum_odd(pkt.data+header_size,maxpayload_size);
+	pkt.data[5] = checksum_even(pkt.data+header_size,maxpayload_size);
 	Sender_ToLowerLayer(&pkt);
     }
+    fprintf(slog,"msg%d sent in %d packet\n",msgnum,seqnum);
+    for(int i=0;i<msg->size;i++){
+    	fprintf(slog,"%c",msg->data[i]);
+    }
+    fprintf(slog,"\n");
+    msgnum++;
 }
 
 /* event handler, called when a packet is passed from the lower layer at the 
