@@ -20,12 +20,13 @@
 #include <vector>
 #include <algorithm>
 #include "rdt_struct.h"
+#include "checksum.h"
 #include "rdt_receiver.h"
 using namespace std;
 FILE *rlog;
 FILE *rstruc;
 FILE *rcor;
-#define header_size 10
+#define header_size 12
 int maxpayload_size=RDT_PKTSIZE-header_size;
 /* receiver initialization, called once at the very beginning */
 struct mypacket{
@@ -34,11 +35,11 @@ struct mypacket{
 		int seqnum;
 		int globalcnt;
 		int tot;
-		char odd;
-		char even;
+		//char odd;
+		//char even;
 		char data[RDT_PKTSIZE-header_size];
 };
-#define window 10
+#define window 100
 struct message * bucket[window];
 int mark[window][20];
 int lmr=-1;//last message received
@@ -75,7 +76,7 @@ void Receiver_Final()
 		fclose(rstruc);
 		fclose(rcor);
 }
-bool checksum(char odd,char even,char *pkt,int size)
+/*bool checksum(char odd,char even,char *pkt,int size)
 {
 		int checkodd=0,checkeven=0;
 		for(int i=1;i<size;i+=2){
@@ -87,7 +88,7 @@ bool checksum(char odd,char even,char *pkt,int size)
 		fprintf(rlog,"check %x %x  calc %x %x\n",odd,even,checkodd & 0xFF,checkeven & 0xFF);
 		fflush(rlog);
 		return ((checkodd & 0xFF)==(odd&0xFF)) && ((checkeven & 0xFF)==(even&0xFF));
-}
+}*/
 
 void Receiver_MergePkt(struct mypacket *mpkt)
 {
@@ -154,8 +155,8 @@ void pktFormat(struct packet *pkt,struct mypacket *mpkt)
 						((pkt->data[8] &0xFF)<<16)+
 						((pkt->data[9] &0xFF)<<24);
 		mpkt->tot=pkt->data[3];
-		mpkt->odd=pkt->data[4];
-		mpkt->even=pkt->data[5];
+		//mpkt->odd=pkt->data[4];
+		//mpkt->even=pkt->data[5];
 		memcpy(mpkt->data,pkt->data+header_size,maxpayload_size);
 		fprintf(rlog,"pktfor size%d msgnum%d seqnum%d tot%d glcnt%d\n",mpkt->payload_size,mpkt->msgnum,mpkt->seqnum,mpkt->tot,mpkt->globalcnt);
 		fflush(rlog);
@@ -203,12 +204,14 @@ char checksum_even(char *pkt,int num)
 void Receiver_FromLowerLayer(struct packet *pkt)
 {
 		struct mypacket *mpkt=(struct mypacket*)malloc(sizeof(struct mypacket));
-		pktFormat(pkt,mpkt);
-		bool check=checksum(mpkt->odd,mpkt->even,mpkt->data,maxpayload_size);
-		if(check==false){
+		//pktFormat(pkt,mpkt);
+		//bool check=checksum(mpkt->odd,mpkt->even,mpkt->data,maxpayload_size);
+		bool check1=check(pkt);
+		if(check1==false){
 				fprintf(rlog,"corrupt\n");
 				return;
 		}
+		pktFormat(pkt,mpkt);
 		fprintf(rlog,"msgnum%d seqnum%d\n",mpkt->msgnum,mpkt->seqnum);
 /*		for(int i=0;i<mpkt->payload_size;i++){
 				fprintf(rlog,"%c",mpkt->data[i]);
@@ -234,9 +237,9 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 		anspkt->data[1] = (acknum>>8)&0xFF;
 		anspkt->data[2] = (acknum>>16)&0xFF;
 		anspkt->data[3] = (acknum>>24)&0xFF;
-
-		anspkt->data[4] = checksum_odd(anspkt->data+6,RDT_PKTSIZE-6);
-		anspkt->data[5] = checksum_even(anspkt->data+6,RDT_PKTSIZE-6);
+		checksum(anspkt);
+//		anspkt->data[4] = checksum_odd(anspkt->data+6,RDT_PKTSIZE-6);
+//		anspkt->data[5] = checksum_even(anspkt->data+6,RDT_PKTSIZE-6);
 		Receiver_ToLowerLayer(anspkt);
 		fprintf(rcor,"lpr%d receive%d ack%d\n",lpr,glcnt,acknum);
 		fprintf(rcor,"clear %dbuf ",acknum-lpr);

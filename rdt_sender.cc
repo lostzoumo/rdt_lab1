@@ -20,10 +20,11 @@
 
 #include "rdt_struct.h"
 #include "rdt_sender.h"
+#include "checksum.h"
 #define window 1000 
 #define timerwindow 1000
 #define timeout 0.3
-int sheader_size=10;
+int sheader_size=12;
 unsigned int globalcnt=1;
 int lar=-1;
 int slpr=0;
@@ -112,8 +113,9 @@ void Sender_FromUpperLayer(struct message *msg)
 				pkt->data[9] = (globalcnt>>24)&0xFF;
 				pkt->data[3] = tot;
 				memcpy(pkt->data+sheader_size, msg->data+cursor, smaxpayload_size);
-				pkt->data[4] = schecksum_odd(pkt->data+sheader_size,smaxpayload_size);
-				pkt->data[5] = schecksum_even(pkt->data+sheader_size,smaxpayload_size);
+				//pkt->data[4] = schecksum_odd(pkt->data+sheader_size,smaxpayload_size);
+				//pkt->data[5] = schecksum_even(pkt->data+sheader_size,smaxpayload_size);
+				checksum(pkt);
 				Sender_ToLowerLayer(pkt);
 				cursor += smaxpayload_size;
 				seqnum++;
@@ -140,8 +142,9 @@ void Sender_FromUpperLayer(struct message *msg)
 				pkt->data[9] = (globalcnt>>24)&0xFF;
 				pkt->data[3] = tot;
 				memcpy(pkt->data+sheader_size, msg->data+cursor, pkt->data[0]);
-				pkt->data[4] = schecksum_odd(pkt->data+sheader_size,smaxpayload_size);
-				pkt->data[5] = schecksum_even(pkt->data+sheader_size,smaxpayload_size);
+				//pkt->data[4] = schecksum_odd(pkt->data+sheader_size,smaxpayload_size);
+				//pkt->data[5] = schecksum_even(pkt->data+sheader_size,smaxpayload_size);
+				checksum(pkt);
 				Sender_ToLowerLayer(pkt);
 				fprintf(slog,"check %x %x\n",pkt->data[4],pkt->data[5]);
 				int bucketnum=globalcnt - slpr-1;
@@ -235,8 +238,8 @@ void Sender_FromLowerLayer(struct packet *pkt)
 					((pkt->data[1]&0xFF)<<8)+
 					((pkt->data[2]&0xFF)<<16)+
 					((pkt->data[3]&0xFF)<<24);
-		bool check=schecksum(pkt->data[4],pkt->data[5],pkt->data+6,RDT_PKTSIZE-6);
-		if(check == false ){
+		bool check1=check(pkt);
+		if(check1 == false ){
 				fprintf(scor,"receiving corrupt\n");
 				return;
 		}
