@@ -21,6 +21,8 @@
 #include "rdt_struct.h"
 #include "rdt_sender.h"
 #define window 10 
+#define timerwindow 20
+#define timeout 0.3
 int sheader_size=10;
 unsigned int globalcnt=1;
 int lar=-1;
@@ -28,20 +30,35 @@ int slpr=0;
 int smaxpayload_size=RDT_PKTSIZE - sheader_size;
 FILE *slog;
 FILE *scor;
+FILE *timelog;
 struct mypacket{
 		packet *pkt;
 		int globalcnt;
 };
 struct mypacket* sendbuf[window];
+struct timer{
+		int glcnt;
+		int pktnum;
+		double time;
+};
+struct timer* timerlist[timerwindow+1];
+int timersize=0;
 /* sender initialization, called once at the very beginning */
 void Sender_Init()
 {
 		fprintf(stdout, "At %.2fs: sender initializing ...\n", GetSimulationTime());
 		slog=fopen("slog.txt","w");
 		scor=fopen("scor.txt","w");
+		timelog=fopen("timelog.txt","w");
 		for(int i=0;i<window;i++){
 				sendbuf[i]=(struct mypacket *)malloc(sizeof(struct mypacket));
 				sendbuf[i]->globalcnt=-1;
+		}
+		for(int i=0;i<timerwindow;i++){
+				timerlist[i]=(struct timer*)malloc(sizeof(struct timer));
+				timerlist[i]->glcnt=0;
+				timerlist[i]->pktnum=0;
+				timerlist[i]->time=0;
 		}
 }
 
@@ -54,6 +71,7 @@ void Sender_Final()
 		fprintf(stdout, "At %.2fs: sender finalizing ...\n", GetSimulationTime());
 		fclose(slog);
 		fclose(scor);
+		fclose(timelog);
 }
 
 char schecksum_odd(char *pkt,int num)
@@ -144,6 +162,17 @@ void Sender_FromUpperLayer(struct message *msg)
 		fflush(slog);
 		fflush(scor);
 		msgnum++;
+#if 0
+//timer
+		fprintf(timelog,"sending glcnt%d pktnum%d curtime%f cursize%d\n",globalcnt-tot,tot,GetSimulationTime(),timersize);
+		if(timersize>=timerwindow)	fprintf(timelog,"sending timersize too big\n");
+		timerlist[timersize]->glcnt=globalcnt-tot;
+		timerlist[timersize]->pktnum=tot;
+		timerlist[timersize]->time=GetSimulationTime()+timeout;
+		if(!Sender_isTimerSet())	Sender_StartTimer(timeout);
+		timersize++;
+		fflush(timelog);
+#endif
 #if 0    
 		static int msgnum=0;
 
@@ -236,4 +265,31 @@ void Sender_FromLowerLayer(struct packet *pkt)
 /* event handler, called when the timer expires */
 void Sender_Timeout()
 {
+		int start = timerlist[0]->glcnt;
+		int end = start+timerlist[0]->pktnum-1;
+		double now=GetSimulationTime();
+		fprintf(timelog,"timeout begin glcnt%d pktnum%d curtime%f cursize%d\n",start,end-start+1,now,timersize);
+		fflush(timelog);
+		for(int i=start;i<=end;i++){
+				if(i>slpr){	
+						Sender_ToLowerLayer(sendbuf[i-slpr-1]->pkt);
+						timerlist[timersize]->glcnt=i;
+						timerlist[timersize]->pktnum=1;
+						timerlist[timersize]->time=now+timeout;
+						timersize++;
+						fprintf(timelog,"timeout new glcnt%d cursize%d\n",i,timersize);
+						fflush(timelog);
+				}
+		}
+		//handled
+		struct timer * tmp= timerlist[0];
+		for(int i=0;i<timersize-1;i++)	timerlist[i]=timerlist[i+1];
+		timerlist[timersize-1]=tmp;
+		tmp->glcnt=0;
+		tmp->pktnum=0;
+		tmp->time=0;
+		timersize--;
+		fprintf(timelog,"timeout after cursize%d next%f\n",timersize,timerlist[0]->time);
+		fflush(timelog);
+		if(timersize>0) Sender_StartTimer(timerlist[0]->time-now);
 }
