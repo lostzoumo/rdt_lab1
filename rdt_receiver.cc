@@ -93,7 +93,6 @@ void Receiver_MergePkt(struct mypacket *mpkt)
 {
 		int bucketnum=(mpkt->msgnum-lmr-1+256)%256;
 		int seqnum=mpkt->seqnum;
-		fprintf(rstruc,"lmr%d bucketnum%d seqnum%d msgnum%d max%d tot%d \n",lmr,bucketnum,seqnum,mpkt->msgnum,mark[bucketnum][0],mpkt->tot);
 		fflush(rstruc);
 		if(bucketnum>=window){
 				return;
@@ -101,6 +100,7 @@ void Receiver_MergePkt(struct mypacket *mpkt)
 		if(mark[bucketnum][seqnum]){
 				return;
 		}
+		fprintf(rstruc,"lmr%d bucketnum%d seqnum%d msgnum%d max%d tot%d \n",lmr,bucketnum,seqnum,mpkt->msgnum,mark[bucketnum][0],mpkt->tot);
 		struct message * pmsg=bucket[bucketnum];
 		//mark[?][0] =>first not 1
 
