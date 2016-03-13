@@ -25,7 +25,7 @@ using namespace std;
 FILE *rlog;
 FILE *rstruc;
 FILE *rcor;
-#define header_size 7
+#define header_size 10
 int maxpayload_size=RDT_PKTSIZE-header_size;
 /* receiver initialization, called once at the very beginning */
 struct mypacket{
@@ -147,25 +147,28 @@ void Receiver_MergePkt(struct mypacket *mpkt)
 void pktFormat(struct packet *pkt,struct mypacket *mpkt)
 {
 		mpkt->payload_size=pkt->data[0];
-		mpkt->msgnum=pkt->data[1];
-		mpkt->seqnum=pkt->data[2];
-		mpkt->globalcnt=pkt->data[6];
+		mpkt->msgnum=pkt->data[1] & 0xFF;
+		mpkt->seqnum=pkt->data[2] & 0xFF;
+		mpkt->globalcnt=(pkt->data[6] & 0xFF)+
+						((pkt->data[7] &0xFF)<<8)+
+						((pkt->data[8] &0xFF)<<16)+
+						((pkt->data[9] &0xFF)<<24);
 		mpkt->tot=pkt->data[3];
 		mpkt->odd=pkt->data[4];
 		mpkt->even=pkt->data[5];
 		memcpy(mpkt->data,pkt->data+header_size,maxpayload_size);
-		fprintf(rlog,"pktfor size%d msgnum%d seqnum%d tot%d\n",mpkt->payload_size,mpkt->msgnum,mpkt->seqnum,mpkt->tot);
+		fprintf(rlog,"pktfor size%d msgnum%d seqnum%d tot%d glcnt%d\n",mpkt->payload_size,mpkt->msgnum,mpkt->seqnum,mpkt->tot,mpkt->globalcnt);
 		fflush(rlog);
 }
-int ack(int *vec,int num)
+unsigned int ack(int *vec,int num)
 {
 		int ret=lpr;
 		int i=0;
 		while(i<window){
 				for(int j=0;j<window;j++){
-						if(recbuf[j]==(lpr+i+1)%256)	{ret=(lpr+i+1)%256;break;}
+						if(recbuf[j]==lpr+i+1)	{ret=lpr+i+1;break;}
 				}
-				if(ret!=(lpr+i+1)%256)	break;
+				if(ret!=lpr+i+1)	break;
 				i++;
 		}
 		return ret;
@@ -215,8 +218,8 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 
 		//next handle returning msg
 		//first fill the glcnt in the recbuf
-/*		int glcnt=mpkt->globalcnt;
-		int pos=(glcnt-lpr-1+256)%256;
+		int glcnt=mpkt->globalcnt;
+		int pos=glcnt-lpr-1;
 		if(mpkt!=NULL) free(mpkt);
 		if(!contain(recbuf,glcnt)&&glcnt>lpr){
 				if(glcnt>window+lpr)	fprintf(rcor,"allert!!!!\n");
@@ -225,10 +228,14 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 		fflush(rcor);
 		//construct the ack pkt
 		packet *anspkt=(packet *)malloc(sizeof(packet));
-		int acknum=ack(recbuf,lpr);
-		anspkt->data[0] = acknum%256;
-		anspkt->data[1] = checksum_odd(anspkt->data+3,RDT_PKTSIZE-3);
-		anspkt->data[2] = checksum_even(anspkt->data+3,RDT_PKTSIZE-3);
+		unsigned int acknum=ack(recbuf,lpr);
+		anspkt->data[0] = acknum&0xFF;
+		anspkt->data[1] = (acknum>>8)&0xFF;
+		anspkt->data[2] = (acknum>>16)&0xFF;
+		anspkt->data[3] = (acknum>>24)&0xFF;
+
+		anspkt->data[4] = checksum_odd(anspkt->data+6,RDT_PKTSIZE-6);
+		anspkt->data[5] = checksum_even(anspkt->data+6,RDT_PKTSIZE-6);
 		Receiver_ToLowerLayer(anspkt);
 		fprintf(rcor,"lpr%d receive%d ack%d\n",lpr,glcnt,acknum);
 		fprintf(rcor,"clear %dbuf ",acknum-lpr);
@@ -247,7 +254,7 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 		}
 		fprintf(rcor,"\n");
 		lpr=acknum;
-		fflush(rcor);*/
+		fflush(rcor);
 		/* int header_size = 6;
 
 		   struct message *msg = (struct message*) malloc(sizeof(struct message));

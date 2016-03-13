@@ -20,8 +20,8 @@
 
 #include "rdt_struct.h"
 #include "rdt_sender.h"
-#define window 10
-int sheader_size=7;
+#define window 10 
+int sheader_size=10;
 unsigned int globalcnt=1;
 int lar=-1;
 int slpr=0;
@@ -41,7 +41,7 @@ void Sender_Init()
 		scor=fopen("scor.txt","w");
 		for(int i=0;i<window;i++){
 				sendbuf[i]=(struct mypacket *)malloc(sizeof(struct mypacket));
-				sendbuf[i]->globalcnt=0;
+				sendbuf[i]->globalcnt=-1;
 		}
 }
 
@@ -86,9 +86,12 @@ void Sender_FromUpperLayer(struct message *msg)
 		while (msg->size-cursor > smaxpayload_size) {
 				packet *pkt=(packet *)malloc(sizeof(packet));
 				pkt->data[0] = smaxpayload_size;
-				pkt->data[1] = msgnum%256;
-				pkt->data[2] = seqnum%256;
-				pkt->data[6] = globalcnt%256;
+				pkt->data[1] = msgnum & 0xFF;
+				pkt->data[2] = seqnum & 0xFF;
+				pkt->data[6] = globalcnt&0xFF;
+				pkt->data[7] = (globalcnt>>8)&0xFF;
+				pkt->data[8] = (globalcnt>>16)&0xFF;
+				pkt->data[9] = (globalcnt>>24)&0xFF;
 				pkt->data[3] = tot;
 				memcpy(pkt->data+sheader_size, msg->data+cursor, smaxpayload_size);
 				pkt->data[4] = schecksum_odd(pkt->data+sheader_size,smaxpayload_size);
@@ -99,35 +102,38 @@ void Sender_FromUpperLayer(struct message *msg)
 				fprintf(slog,"check %x %x\n",pkt->data[4],pkt->data[5]);
 				//just fill the send buffer, hope window size buffer would be enough
 				//sendbuf[i]'s space is allocated in init() and we keep using them
-/*				int bucketnum=globalcnt - lar-1;
+				int bucketnum=globalcnt - slpr-1;
 				if(bucketnum<window){
 				sendbuf[bucketnum]->globalcnt=globalcnt;
 				sendbuf[bucketnum]->pkt=pkt;
-				fprintf(scor,"sending glcnt %d\n",globalcnt%256);
+				fprintf(scor,"sending glcnt %d\n",globalcnt);
 				globalcnt++;
 				}
-				else	fprintf(scor,"sending allert!!\n");*/
+				else	fprintf(scor,"sending allert!!\n");
 		}
 		if (msg->size > cursor) {
 				packet *pkt=(packet *)malloc(sizeof(packet));
 				pkt->data[0] = msg->size-cursor;
-				pkt->data[1] = msgnum%256;
-				pkt->data[2] = seqnum%256;
-				pkt->data[6] =globalcnt%256;
+				pkt->data[1] = msgnum & 0xFF;
+				pkt->data[2] = seqnum & 0xFF;
+				pkt->data[6] = globalcnt&0xFF;
+				pkt->data[7] = (globalcnt>>8)&0xFF;
+				pkt->data[8] = (globalcnt>>16)&0xFF;
+				pkt->data[9] = (globalcnt>>24)&0xFF;
 				pkt->data[3] = tot;
 				memcpy(pkt->data+sheader_size, msg->data+cursor, pkt->data[0]);
 				pkt->data[4] = schecksum_odd(pkt->data+sheader_size,smaxpayload_size);
 				pkt->data[5] = schecksum_even(pkt->data+sheader_size,smaxpayload_size);
 				Sender_ToLowerLayer(pkt);
 				fprintf(slog,"check %x %x\n",pkt->data[4],pkt->data[5]);
-/*				int bucketnum=globalcnt - lar-1;
+				int bucketnum=globalcnt - slpr-1;
 				if(bucketnum<window){
 				sendbuf[bucketnum]->globalcnt=globalcnt;
 				sendbuf[bucketnum]->pkt=pkt;
-				fprintf(scor,"sending glcnt %d\n",globalcnt%256);
+				fprintf(scor,"sending glcnt %d\n",globalcnt);
 				globalcnt++;
 				}
-				else	fprintf(scor,"sending allert!!\n");*/
+				else	fprintf(scor,"sending allert!!\n");
 
 		}
 		fprintf(slog,"msg%d sent in %d packet\n",msgnum,seqnum);
@@ -188,25 +194,31 @@ bool schecksum(char odd,char even,char *pkt,int size)
 		for(int i=0;i<size;i+=2){
 				checkeven+=pkt[i];
 		}
-		return ((checkodd & 0xFF)==odd) && ((checkeven & 0xFF)==even);
+		return ((checkodd & 0xFF)==(odd & 0xFF)) && ((checkeven & 0xFF)==(even & 0xFF));
 }
 
 /* event handler, called when a packet is passed from the lower layer at the 
    sender */
 void Sender_FromLowerLayer(struct packet *pkt)
 {
-		int acknum=pkt->data[0];
-		bool check=schecksum(pkt->data[1],pkt->data[2],pkt->data+3,RDT_PKTSIZE-3);
+//ack packet format :4bytes ack,2byte checksum
+		int acknum=(pkt->data[0]&0xFF)+
+					((pkt->data[1]&0xFF)<<8)+
+					((pkt->data[2]&0xFF)<<16)+
+					((pkt->data[3]&0xFF)<<24);
+		bool check=schecksum(pkt->data[4],pkt->data[5],pkt->data+6,RDT_PKTSIZE-6);
 		if(check == false ){
 				fprintf(scor,"receiving corrupt\n");
 				return;
 		}
 		fprintf(scor,"receiving ack%d lpr%d\n",acknum,slpr);
-		if(slpr==acknum)	return;
+		if(slpr>=acknum)	return;
 		int clear=acknum-slpr;
 		struct mypacket* tmp[window];
-		for(int i=0;i<window-clear;i++){
+		for(int i=0;i<clear;i++){
 				tmp[i]=sendbuf[i];
+		}
+		for(int i=0;i<window-clear;i++){
 				sendbuf[i]=sendbuf[i+clear];
 		}
 		fprintf(scor,"	clear %dpacket",clear);
