@@ -57,20 +57,26 @@ even	rdt_receiver.cc	/^		char even;$/;"	m	struct:mypacket	file:
 event_type	rdt_sim.cc	/^				int event_type;         \/* application-specific event type *\/$/;"	m	class:Event	file:
 free_msg	rdt_sim.cc	/^static void free_msg(struct message *msg)$/;"	f	file:
 generate_msg	rdt_sim.cc	/^static struct message *generate_msg()$/;"	f	file:
+globalcnt	rdt_sender.cc	/^		int globalcnt;$/;"	m	struct:mypacket	file:
+globalcnt	rdt_sender.cc	/^int globalcnt=0;$/;"	v
 head	rdt_sim.cc	/^				Event *head;            \/* head event in the chain *\/$/;"	m	class:EventChain	file:
 header_size	rdt_receiver.cc	/^int header_size=6;$/;"	v
+header_size	rdt_sender.cc	/^int header_size=6;$/;"	v
 lam	rdt_receiver.cc	/^int lam=lmr+window;\/\/last acceptable message$/;"	v
+lar	rdt_sender.cc	/^int lar=-1;$/;"	v
 lmr	rdt_receiver.cc	/^int lmr=-1;\/\/last message received$/;"	v
 loss_rate	rdt_sim.cc	/^double loss_rate;$/;"	v
 main	rdt_sim.cc	/^int main(int argc, char *argv[])$/;"	f
 mark	rdt_receiver.cc	/^int mark[window][20];$/;"	v
 maxpayload_size	rdt_receiver.cc	/^int maxpayload_size=RDT_PKTSIZE-header_size;$/;"	v
+maxpayload_size	rdt_sender.cc	/^int maxpayload_size=RDT_PKTSIZE - header_size;$/;"	v
 message	rdt_struct.h	/^struct message {$/;"	s
 message_verfication_passed	rdt_sim.cc	/^bool message_verfication_passed = true;$/;"	v
 msg_arrivalint	rdt_sim.cc	/^double msg_arrivalint;$/;"	v
 msg_size	rdt_sim.cc	/^int msg_size;$/;"	v
 msgnum	rdt_receiver.cc	/^		unsigned char msgnum;$/;"	m	struct:mypacket	file:
 mypacket	rdt_receiver.cc	/^struct mypacket{$/;"	s	file:
+mypacket	rdt_sender.cc	/^struct mypacket{$/;"	s	file:
 myrandom	rdt_sim.cc	/^static double myrandom()$/;"	f	file:
 next	rdt_sim.cc	/^				class Event *next;      \/* next event in the chain *\/$/;"	m	class:Event	typeref:class:Event::Event	file:
 next_event	rdt_sim.cc	/^				Event *next_event() {$/;"	f	class:EventChain
@@ -78,6 +84,7 @@ odd	rdt_receiver.cc	/^		char odd;$/;"	m	struct:mypacket	file:
 outoforder_rate	rdt_sim.cc	/^double outoforder_rate;$/;"	v
 packet	rdt_struct.h	/^struct packet {$/;"	s
 payload_size	rdt_receiver.cc	/^		int payload_size;$/;"	m	struct:mypacket	file:
+pkt	rdt_sender.cc	/^		packet *pkt;$/;"	m	struct:mypacket	file:
 pkt	rdt_sim.cc	/^				struct packet pkt;$/;"	m	class:EventReceiverFromLowerLayer	typeref:struct:EventReceiverFromLowerLayer::packet	file:
 pkt	rdt_sim.cc	/^				struct packet pkt;$/;"	m	class:EventSenderFromLowerLayer	typeref:struct:EventSenderFromLowerLayer::packet	file:
 pktFormat	rdt_receiver.cc	/^void pktFormat(struct packet *pkt,struct mypacket *mpkt)$/;"	f
@@ -86,6 +93,7 @@ rlog	rdt_receiver.cc	/^FILE *rlog;$/;"	v
 rstruc	rdt_receiver.cc	/^FILE *rstruc;$/;"	v
 sched_time	rdt_sim.cc	/^				double sched_time;      \/* scheduled occuring time *\/$/;"	m	class:Event	file:
 schedule	rdt_sim.cc	/^				void schedule(Event *e) {$/;"	f	class:EventChain
+sendbuf	rdt_sender.cc	/^struct mypacket* sendbuf[window];$/;"	v	typeref:struct:mypacket
 sender_timer	rdt_sim.cc	/^Event *sender_timer = NULL;$/;"	v
 seqnum	rdt_receiver.cc	/^		int seqnum;$/;"	m	struct:mypacket	file:
 sim_core	rdt_sim.cc	/^EventChain sim_core;$/;"	v
@@ -101,3 +109,4 @@ tot_pkts_passed	rdt_sim.cc	/^int tot_pkts_passed = 0;$/;"	v
 tracing_level	rdt_sim.cc	/^int tracing_level;$/;"	v
 ver	rdt_sim.cc	/^FILE *ver;$/;"	v
 window	rdt_receiver.cc	38;"	d	file:
+window	rdt_sender.cc	23;"	d	file:

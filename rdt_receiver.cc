@@ -17,34 +17,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <vector>
+#include <algorithm>
 #include "rdt_struct.h"
 #include "rdt_receiver.h"
-
+using namespace std;
 FILE *rlog;
 FILE *rstruc;
-int header_size=6;
+FILE *rcor;
+#define header_size 7
 int maxpayload_size=RDT_PKTSIZE-header_size;
 /* receiver initialization, called once at the very beginning */
 struct mypacket{
 		int payload_size;
 		unsigned char msgnum;
 		int seqnum;
+		int globalcnt;
 		int tot;
 		char odd;
 		char even;
-		char data[RDT_PKTSIZE-6];
+		char data[RDT_PKTSIZE-header_size];
 };
 #define window 10
 struct message * bucket[window];
 int mark[window][20];
 int lmr=-1;//last message received
+int lpr=0;//last packet received
 int lam=lmr+window;//last acceptable message
+int recbuf[window];
 void Receiver_Init()
 {
 		fprintf(stdout, "At %.2fs: receiver initializing ...\n", GetSimulationTime());
 		rlog=fopen("rlog.txt","w");
 		rstruc=fopen("rstruc.txt","w");
+		rcor=fopen("rcor.txt","w");
 		for(int i=0;i<window;i++){
 				bucket[i]=(struct message *)malloc(sizeof(struct message));
 				bucket[i]->size=0;
@@ -53,6 +59,9 @@ void Receiver_Init()
 				for(int j=0;j<20;j++){
 						mark[i][j]=0;
 				}
+		}
+		for(int i=0;i<window;i++){
+				recbuf[i]=-1;
 		}
 }
 /* receiver finalization, called once at the very end.
@@ -63,6 +72,8 @@ void Receiver_Final()
 {
 		fprintf(stdout, "At %.2fs: receiver finalizing ...\n", GetSimulationTime());
 		fclose(rlog);
+		fclose(rstruc);
+		fclose(rcor);
 }
 bool checksum(char odd,char even,char *pkt,int size)
 {
@@ -73,7 +84,9 @@ bool checksum(char odd,char even,char *pkt,int size)
 		for(int i=0;i<size;i+=2){
 				checkeven+=pkt[i];
 		}
-		return ((checkodd && 0xFF)==odd) && ((checkeven && 0xFF)==even);
+		fprintf(rlog,"check %x %x  calc %x %x\n",odd,even,checkodd & 0xFF,checkeven & 0xFF);
+		fflush(rlog);
+		return ((checkodd & 0xFF)==(odd&0xFF)) && ((checkeven & 0xFF)==(even&0xFF));
 }
 
 void Receiver_MergePkt(struct mypacket *mpkt)
@@ -90,21 +103,21 @@ void Receiver_MergePkt(struct mypacket *mpkt)
 		}
 		struct message * pmsg=bucket[bucketnum];
 		//mark[?][0] =>first not 1
-		
+
 		if(pmsg->size > mpkt->payload_size+(seqnum-1)*maxpayload_size){
 				memcpy(pmsg->data+(seqnum-1)*maxpayload_size,mpkt->data,maxpayload_size);
 		}
 		else{
-			pmsg->size=mpkt->payload_size+(seqnum-1)*maxpayload_size;
-			if(mark[bucketnum][0]==0)    
-					pmsg->data=(char *)malloc(pmsg->size);
-			else	
-					pmsg->data=(char *)realloc(pmsg->data,pmsg->size);
-			memcpy(pmsg->data+(seqnum-1)*maxpayload_size,mpkt->data,mpkt->payload_size);
+				pmsg->size=mpkt->payload_size+(seqnum-1)*maxpayload_size;
+				if(mark[bucketnum][0]==0)    
+						pmsg->data=(char *)malloc(pmsg->size);
+				else	
+						pmsg->data=(char *)realloc(pmsg->data,pmsg->size);
+				memcpy(pmsg->data+(seqnum-1)*maxpayload_size,mpkt->data,mpkt->payload_size);
 		}
 		mark[bucketnum][seqnum]=1;
 		for(int i=1;i<20;i++){
-			if(mark[bucketnum][i]==0)	{mark[bucketnum][0]=i-1;break;}
+				if(mark[bucketnum][i]==0)	{mark[bucketnum][0]=i-1;break;}
 		}
 		fprintf(rstruc,"mark[0]%d tot%d\n",mark[bucketnum][0],mpkt->tot);
 		if( mark[bucketnum][0]==mpkt->tot ){
@@ -136,30 +149,105 @@ void pktFormat(struct packet *pkt,struct mypacket *mpkt)
 		mpkt->payload_size=pkt->data[0];
 		mpkt->msgnum=pkt->data[1];
 		mpkt->seqnum=pkt->data[2];
+		mpkt->globalcnt=pkt->data[6];
 		mpkt->tot=pkt->data[3];
 		mpkt->odd=pkt->data[4];
 		mpkt->even=pkt->data[5];
 		memcpy(mpkt->data,pkt->data+header_size,maxpayload_size);
+		fprintf(rlog,"pktfor size%d msgnum%d seqnum%d tot%d\n",mpkt->payload_size,mpkt->msgnum,mpkt->seqnum,mpkt->tot);
+		fflush(rlog);
 }
+int ack(int *vec,int num)
+{
+		int ret=lpr;
+		int i=0;
+		while(i<window){
+				for(int j=0;j<window;j++){
+						if(recbuf[j]==(lpr+i+1)%256)	{ret=(lpr+i+1)%256;break;}
+				}
+				if(ret!=(lpr+i+1)%256)	break;
+				i++;
+		}
+		return ret;
+}
+bool contain(int *vec,int num)
+{
+		for(int i=0;i<window;i++){
+				if(vec[i]==num)	return true;
+		}
+		return false;
+}
+char checksum_odd(char *pkt,int num)
+{
+		int checksum=0;
+		for(int i=1;i<num;i+=2){
+				checksum+=pkt[i];
+		}
+		return checksum & 0xFF;
+}
+
+char checksum_even(char *pkt,int num)
+{
+		int checksum=0;
+		for(int i=0;i<num;i+=2){
+				checksum+=pkt[i];
+		}
+		return checksum & 0xFF;
+}
+
 /* event handler, called when a packet is passed from the lower layer at the 
    receiver */
 void Receiver_FromLowerLayer(struct packet *pkt)
 {
 		struct mypacket *mpkt=(struct mypacket*)malloc(sizeof(struct mypacket));
 		pktFormat(pkt,mpkt);
-
 		bool check=checksum(mpkt->odd,mpkt->even,mpkt->data,maxpayload_size);
 		if(check==false){
 				fprintf(rlog,"corrupt\n");
 				return;
 		}
 		fprintf(rlog,"msgnum%d seqnum%d\n",mpkt->msgnum,mpkt->seqnum);
-		for(int i=0;i<mpkt->payload_size;i++){
-			fprintf(rlog,"%c",mpkt->data[i]);
+/*		for(int i=0;i<mpkt->payload_size;i++){
+				fprintf(rlog,"%c",mpkt->data[i]);
 		}
-		fprintf(rlog,"\n");
+		fprintf(rlog,"\n");*/
 		Receiver_MergePkt(mpkt);
+
+		//next handle returning msg
+		//first fill the glcnt in the recbuf
+/*		int glcnt=mpkt->globalcnt;
+		int pos=(glcnt-lpr-1+256)%256;
 		if(mpkt!=NULL) free(mpkt);
+		if(!contain(recbuf,glcnt)&&glcnt>lpr){
+				if(glcnt>window+lpr)	fprintf(rcor,"allert!!!!\n");
+				else	{fprintf(rcor,"not contain%d\n",glcnt);recbuf[pos]=glcnt;}
+		}	
+		fflush(rcor);
+		//construct the ack pkt
+		packet *anspkt=(packet *)malloc(sizeof(packet));
+		int acknum=ack(recbuf,lpr);
+		anspkt->data[0] = acknum%256;
+		anspkt->data[1] = checksum_odd(anspkt->data+3,RDT_PKTSIZE-3);
+		anspkt->data[2] = checksum_even(anspkt->data+3,RDT_PKTSIZE-3);
+		Receiver_ToLowerLayer(anspkt);
+		fprintf(rcor,"lpr%d receive%d ack%d\n",lpr,glcnt,acknum);
+		fprintf(rcor,"clear %dbuf ",acknum-lpr);
+		fflush(rcor);
+		if(acknum!=lpr){
+				int clear=acknum-lpr;
+				for(int i=0;i<clear;i++){
+						fprintf(rcor," %d",recbuf[i]);
+				}
+				for(int i=0;i<window-clear;i++){
+						recbuf[i]=recbuf[i+clear];
+				}
+				for(int i=0;i<clear;i++){
+						recbuf[window-clear+i]=-1;
+				}
+		}
+		fprintf(rcor,"\n");
+		lpr=acknum;
+		fflush(rcor);*/
 		/* int header_size = 6;
 
 		   struct message *msg = (struct message*) malloc(sizeof(struct message));
