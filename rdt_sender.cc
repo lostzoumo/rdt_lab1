@@ -20,8 +20,8 @@
 
 #include "rdt_struct.h"
 #include "rdt_sender.h"
-#define window 10 
-#define timerwindow 20
+#define window 1000 
+#define timerwindow 1000
 #define timeout 0.3
 int sheader_size=10;
 unsigned int globalcnt=1;
@@ -54,7 +54,7 @@ void Sender_Init()
 				sendbuf[i]=(struct mypacket *)malloc(sizeof(struct mypacket));
 				sendbuf[i]->globalcnt=-1;
 		}
-		for(int i=0;i<timerwindow;i++){
+		for(int i=0;i<timerwindow+1;i++){
 				timerlist[i]=(struct timer*)malloc(sizeof(struct timer));
 				timerlist[i]->glcnt=0;
 				timerlist[i]->pktnum=0;
@@ -162,7 +162,7 @@ void Sender_FromUpperLayer(struct message *msg)
 		fflush(slog);
 		fflush(scor);
 		msgnum++;
-#if 0
+#if 1
 //timer
 		fprintf(timelog,"sending glcnt%d pktnum%d curtime%f cursize%d\n",globalcnt-tot,tot,GetSimulationTime(),timersize);
 		if(timersize>=timerwindow)	fprintf(timelog,"sending timersize too big\n");
@@ -268,11 +268,14 @@ void Sender_Timeout()
 		int start = timerlist[0]->glcnt;
 		int end = start+timerlist[0]->pktnum-1;
 		double now=GetSimulationTime();
-		fprintf(timelog,"timeout begin glcnt%d pktnum%d curtime%f cursize%d\n",start,end-start+1,now,timersize);
+		fprintf(timelog,"timeout begin slpr%d glcnt%d pktnum%d curtime%f cursize%d\n",slpr,start,end-start+1,now,timersize);
 		fflush(timelog);
 		for(int i=start;i<=end;i++){
 				if(i>slpr){	
+						fprintf(timelog,"bug start\n");
 						Sender_ToLowerLayer(sendbuf[i-slpr-1]->pkt);
+						fprintf(timelog,"%s\n",sendbuf[i-slpr-1]->pkt==NULL?"is null":"not null");
+						fflush(timelog);
 						timerlist[timersize]->glcnt=i;
 						timerlist[timersize]->pktnum=1;
 						timerlist[timersize]->time=now+timeout;

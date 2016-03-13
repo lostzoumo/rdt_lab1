@@ -448,6 +448,7 @@ int main(int argc, char *argv[])
 				switch (e->event_type) {
 						case EVENT_SENDER_FROMUPPERLAYER:
 								fprintf(simlog, "Time %.2fs (Sender): the upper layer instructs rdt layer to send out a message.\n", sim_core.time());
+								fflush(simlog);
 								{
 										if (tracing_level>=1) {
 												fprintf(stdout, "Time %.2fs (Sender): the upper layer instructs rdt layer to send out a message.\n", sim_core.time());
@@ -468,10 +469,13 @@ int main(int argc, char *argv[])
 										else
 												delete real_e;
 								}
+								fprintf(simlog,"sendfromupperlayer\n");
+								fflush(simlog);
 								break;
 
 						case EVENT_SENDER_FROMLOWERLAYER:
 								fprintf(simlog, "Time %.2fs (Sender): the lower layer informs the rdt layer that a packet is received from the link.\n", sim_core.time());
+								fflush(simlog);
 								{
 										if (tracing_level>=1) {
 												fprintf(stdout, "Time %.2fs (Sender): the lower layer informs the rdt layer that a packet is received from the link.\n", sim_core.time());
@@ -483,10 +487,13 @@ int main(int argc, char *argv[])
 
 										delete real_e;
 								}
+								fprintf(simlog,"sendfromlowerlayer\n");
+								fflush(simlog);
 								break;
 
 						case EVENT_SENDER_TIMEOUT:
 								fprintf(simlog, "Time %.2fs (Sender): the timer expires.\n", sim_core.time());
+								fflush(simlog);
 								{
 										if (tracing_level>=1) {
 												fprintf(stdout, "Time %.2fs (Sender): the timer expires.\n", sim_core.time());
@@ -498,10 +505,13 @@ int main(int argc, char *argv[])
 
 										Sender_Timeout();
 								}
+								fprintf(simlog,"sendtimeout\n");
+								fflush(simlog);
 								break;
 
 						case EVENT_RECEIVER_FROMLOWERLAYER:
 								fprintf(simlog, "Time %.2fs (Receiver): the lower layer informs the rdt layer that a packet is received from the link.\n", sim_core.time());
+								fflush(simlog);
 								{
 										if (tracing_level>=1) {
 												fprintf(stdout, "Time %.2fs (Receiver): the lower layer informs the rdt layer that a packet is received from the link.\n", sim_core.time());
@@ -513,6 +523,8 @@ int main(int argc, char *argv[])
 
 										delete real_e;
 								}
+								fprintf(simlog,"receiverfromlayer\n");
+								fflush(simlog);
 								break;
 
 						default:

@@ -228,6 +228,7 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 		fflush(rcor);
 		//construct the ack pkt
 		packet *anspkt=(packet *)malloc(sizeof(packet));
+
 		unsigned int acknum=ack(recbuf,lpr);
 		anspkt->data[0] = acknum&0xFF;
 		anspkt->data[1] = (acknum>>8)&0xFF;

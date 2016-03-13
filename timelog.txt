@@ -1,0 +1,193 @@
+sending glcnt1 pktnum2 curtime0.000000 cursize0
+sending glcnt3 pktnum1 curtime0.173053 cursize1
+timeout begin slpr2 glcnt1 pktnum2 curtime0.300000 cursize2
+timeout after cursize1 next0.473053
+sending glcnt4 pktnum2 curtime0.359727 cursize1
+sending glcnt6 pktnum1 curtime0.424989 cursize2
+timeout begin slpr3 glcnt3 pktnum1 curtime0.473053 cursize3
+timeout after cursize2 next0.659727
+sending glcnt7 pktnum1 curtime0.512205 cursize2
+sending glcnt8 pktnum1 curtime0.578264 cursize3
+sending glcnt9 pktnum2 curtime0.582936 cursize4
+sending glcnt11 pktnum1 curtime0.649211 cursize5
+timeout begin slpr6 glcnt4 pktnum2 curtime0.659727 cursize6
+timeout after cursize5 next0.724989
+timeout begin slpr6 glcnt6 pktnum1 curtime0.724989 cursize5
+timeout after cursize4 next0.812205
+sending glcnt12 pktnum1 curtime0.786026 cursize4
+timeout begin slpr8 glcnt7 pktnum1 curtime0.812205 cursize5
+timeout after cursize4 next0.878264
+timeout begin slpr11 glcnt8 pktnum1 curtime0.878264 cursize4
+timeout after cursize3 next0.882936
+timeout begin slpr11 glcnt9 pktnum2 curtime0.882936 cursize3
+timeout after cursize2 next0.949211
+timeout begin slpr12 glcnt11 pktnum1 curtime0.949211 cursize2
+timeout after cursize1 next1.086026
+sending glcnt13 pktnum2 curtime0.957106 cursize1
+sending glcnt15 pktnum1 curtime1.082319 cursize2
+timeout begin slpr12 glcnt12 pktnum1 curtime1.086026 cursize3
+timeout after cursize2 next1.257106
+timeout begin slpr15 glcnt13 pktnum2 curtime1.257106 cursize2
+timeout after cursize1 next1.382319
+sending glcnt16 pktnum1 curtime1.257230 cursize1
+timeout begin slpr15 glcnt15 pktnum1 curtime1.382319 cursize2
+timeout after cursize1 next1.557230
+sending glcnt17 pktnum2 curtime1.432599 cursize1
+timeout begin slpr16 glcnt16 pktnum1 curtime1.557230 cursize2
+timeout after cursize1 next1.732599
+sending glcnt19 pktnum1 curtime1.592114 cursize1
+sending glcnt20 pktnum1 curtime1.630448 cursize2
+timeout begin slpr18 glcnt17 pktnum2 curtime1.732599 cursize3
+timeout after cursize2 next1.892114
+sending glcnt21 pktnum1 curtime1.736310 cursize2
+sending glcnt22 pktnum1 curtime1.826704 cursize3
+sending glcnt23 pktnum1 curtime1.844028 cursize4
+timeout begin slpr21 glcnt19 pktnum1 curtime1.892114 cursize5
+timeout after cursize4 next1.930448
+sending glcnt24 pktnum2 curtime1.892751 cursize4
+timeout begin slpr21 glcnt20 pktnum1 curtime1.930448 cursize5
+timeout after cursize4 next2.036310
+sending glcnt26 pktnum1 curtime2.033450 cursize4
+timeout begin slpr23 glcnt21 pktnum1 curtime2.036310 cursize5
+timeout after cursize4 next2.126704
+timeout begin slpr25 glcnt22 pktnum1 curtime2.126704 cursize4
+timeout after cursize3 next2.144028
+sending glcnt27 pktnum2 curtime2.130572 cursize3
+timeout begin slpr25 glcnt23 pktnum1 curtime2.144028 cursize4
+timeout after cursize3 next2.192751
+timeout begin slpr25 glcnt24 pktnum2 curtime2.192751 cursize3
+timeout after cursize2 next2.333450
+sending glcnt29 pktnum1 curtime2.306647 cursize2
+timeout begin slpr28 glcnt26 pktnum1 curtime2.333450 cursize3
+timeout after cursize2 next2.430572
+timeout begin slpr28 glcnt27 pktnum2 curtime2.430572 cursize2
+timeout after cursize1 next2.606647
+sending glcnt30 pktnum2 curtime2.451586 cursize1
+timeout begin slpr29 glcnt29 pktnum1 curtime2.606647 cursize2
+timeout after cursize1 next2.751586
+sending glcnt32 pktnum1 curtime2.638798 cursize1
+timeout begin slpr31 glcnt30 pktnum2 curtime2.751586 cursize2
+timeout after cursize1 next2.938798
+sending glcnt33 pktnum2 curtime2.795041 cursize1
+sending glcnt35 pktnum1 curtime2.935980 cursize2
+timeout begin slpr33 glcnt32 pktnum1 curtime2.938798 cursize3
+timeout after cursize2 next3.095041
+sending glcnt36 pktnum2 curtime3.064758 cursize2
+sending glcnt38 pktnum1 curtime3.086637 cursize3
+timeout begin slpr34 glcnt33 pktnum2 curtime3.095041 cursize4
+timeout after cursize3 next3.235980
+sending glcnt39 pktnum2 curtime3.226329 cursize3
+sending glcnt41 pktnum1 curtime3.233898 cursize4
+timeout begin slpr36 glcnt35 pktnum1 curtime3.235980 cursize5
+timeout after cursize4 next3.364758
+timeout begin slpr37 glcnt36 pktnum2 curtime3.364758 cursize4
+timeout after cursize3 next3.386637
+timeout begin slpr38 glcnt38 pktnum1 curtime3.386637 cursize3
+timeout after cursize2 next3.526329
+sending glcnt42 pktnum2 curtime3.423860 cursize2
+sending glcnt44 pktnum1 curtime3.498611 cursize3
+timeout begin slpr41 glcnt39 pktnum2 curtime3.526329 cursize4
+timeout after cursize3 next3.533898
+timeout begin slpr41 glcnt41 pktnum1 curtime3.533898 cursize3
+timeout after cursize2 next3.723860
+sending glcnt45 pktnum2 curtime3.680692 cursize2
+sending glcnt47 pktnum1 curtime3.712140 cursize3
+timeout begin slpr44 glcnt42 pktnum2 curtime3.723860 cursize4
+timeout after cursize3 next3.798611
+timeout begin slpr44 glcnt44 pktnum1 curtime3.798611 cursize3
+timeout after cursize2 next3.980692
+sending glcnt48 pktnum2 curtime3.816734 cursize2
+sending glcnt50 pktnum1 curtime3.939053 cursize3
+timeout begin slpr47 glcnt45 pktnum2 curtime3.980692 cursize4
+timeout after cursize3 next4.012140
+timeout begin slpr47 glcnt47 pktnum1 curtime4.012140 cursize3
+timeout after cursize2 next4.116734
+sending glcnt51 pktnum2 curtime4.022148 cursize2
+sending glcnt53 pktnum1 curtime4.100873 cursize3
+timeout begin slpr50 glcnt48 pktnum2 curtime4.116734 cursize4
+timeout after cursize3 next4.239053
+sending glcnt54 pktnum1 curtime4.209354 cursize3
+timeout begin slpr52 glcnt50 pktnum1 curtime4.239053 cursize4
+timeout after cursize3 next4.322148
+sending glcnt55 pktnum1 curtime4.318447 cursize3
+timeout begin slpr53 glcnt51 pktnum2 curtime4.322148 cursize4
+timeout after cursize3 next4.400873
+sending glcnt56 pktnum2 curtime4.374184 cursize3
+timeout begin slpr54 glcnt53 pktnum1 curtime4.400873 cursize4
+timeout after cursize3 next4.509354
+sending glcnt58 pktnum1 curtime4.405551 cursize3
+timeout begin slpr54 glcnt54 pktnum1 curtime4.509354 cursize4
+timeout after cursize3 next4.618447
+sending glcnt59 pktnum1 curtime4.571000 cursize3
+timeout begin slpr58 glcnt55 pktnum1 curtime4.618447 cursize4
+timeout after cursize3 next4.674184
+timeout begin slpr58 glcnt56 pktnum2 curtime4.674184 cursize3
+timeout after cursize2 next4.705551
+sending glcnt60 pktnum1 curtime4.697726 cursize2
+timeout begin slpr58 glcnt58 pktnum1 curtime4.705551 cursize3
+timeout after cursize2 next4.871000
+sending glcnt61 pktnum1 curtime4.736696 cursize2
+sending glcnt62 pktnum1 curtime4.828958 cursize3
+timeout begin slpr59 glcnt59 pktnum1 curtime4.871000 cursize4
+timeout after cursize3 next4.997726
+timeout begin slpr61 glcnt60 pktnum1 curtime4.997726 cursize3
+timeout after cursize2 next5.036696
+sending glcnt63 pktnum2 curtime5.009914 cursize2
+timeout begin slpr62 glcnt61 pktnum1 curtime5.036696 cursize3
+timeout after cursize2 next5.128958
+timeout begin slpr62 glcnt62 pktnum1 curtime5.128958 cursize2
+timeout after cursize1 next5.309914
+sending glcnt65 pktnum2 curtime5.187752 cursize1
+sending glcnt67 pktnum2 curtime5.284146 cursize2
+timeout begin slpr64 glcnt63 pktnum2 curtime5.309914 cursize3
+timeout after cursize2 next5.487752
+sending glcnt69 pktnum1 curtime5.375188 cursize2
+timeout begin slpr68 glcnt65 pktnum2 curtime5.487752 cursize3
+timeout after cursize2 next5.584146
+sending glcnt70 pktnum2 curtime5.524042 cursize2
+sending glcnt72 pktnum2 curtime5.552466 cursize3
+timeout begin slpr69 glcnt67 pktnum2 curtime5.584146 cursize4
+timeout after cursize3 next5.675188
+sending glcnt74 pktnum2 curtime5.651117 cursize3
+timeout begin slpr69 glcnt69 pktnum1 curtime5.675188 cursize4
+timeout after cursize3 next5.824042
+sending glcnt76 pktnum1 curtime5.686907 cursize3
+sending glcnt77 pktnum2 curtime5.812957 cursize4
+timeout begin slpr75 glcnt70 pktnum2 curtime5.824042 cursize5
+timeout after cursize4 next5.852466
+timeout begin slpr75 glcnt72 pktnum2 curtime5.852466 cursize4
+timeout after cursize3 next5.951117
+sending glcnt79 pktnum1 curtime5.939638 cursize3
+timeout begin slpr76 glcnt74 pktnum2 curtime5.951117 cursize4
+timeout after cursize3 next5.986907
+timeout begin slpr76 glcnt76 pktnum1 curtime5.986907 cursize3
+timeout after cursize2 next6.112957
+sending glcnt80 pktnum2 curtime6.032034 cursize2
+sending glcnt82 pktnum2 curtime6.075067 cursize3
+sending glcnt84 pktnum1 curtime6.085274 cursize4
+timeout begin slpr79 glcnt77 pktnum2 curtime6.112957 cursize5
+timeout after cursize4 next6.239638
+sending glcnt85 pktnum2 curtime6.122501 cursize4
+sending glcnt87 pktnum2 curtime6.174828 cursize5
+sending glcnt89 pktnum1 curtime6.217166 cursize6
+timeout begin slpr81 glcnt79 pktnum1 curtime6.239638 cursize7
+timeout after cursize6 next6.332034
+timeout begin slpr86 glcnt80 pktnum2 curtime6.332034 cursize6
+timeout after cursize5 next6.375067
+timeout begin slpr87 glcnt82 pktnum2 curtime6.375067 cursize5
+timeout after cursize4 next6.385274
+timeout begin slpr87 glcnt84 pktnum1 curtime6.385274 cursize4
+timeout after cursize3 next6.422501
+sending glcnt90 pktnum2 curtime6.404139 cursize3
+timeout begin slpr87 glcnt85 pktnum2 curtime6.422501 cursize4
+timeout after cursize3 next6.474828
+timeout begin slpr87 glcnt87 pktnum2 curtime6.474828 cursize3
+bug start
+not null
+timeout new glcnt88 cursize4
+timeout after cursize3 next6.517166
+sending glcnt92 pktnum1 curtime6.481520 cursize3
+timeout begin slpr89 glcnt89 pktnum1 curtime6.517166 cursize4
+timeout after cursize3 next6.704139
+sending glcnt93 pktnum2 curtime6.520852 cursize3
+sending glcnt95 pktnum2 curtime6.652722 cursize4
