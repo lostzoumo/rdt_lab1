@@ -25,7 +25,8 @@ using namespace std;
 FILE *rlog;
 FILE *rstruc;
 FILE *rcor;
-#define header_size 10
+#define header_size 12
+#define rheader_size 8
 int maxpayload_size=RDT_PKTSIZE-header_size;
 /* receiver initialization, called once at the very beginning */
 struct mypacket{
@@ -36,9 +37,11 @@ struct mypacket{
 		int tot;
 		char odd;
 		char even;
+		char first;
+		char second;
 		char data[RDT_PKTSIZE-header_size];
 };
-#define window 10
+#define window 1000
 struct message * bucket[window];
 int mark[window][20];
 int lmr=-1;//last message received
@@ -75,18 +78,25 @@ void Receiver_Final()
 		fclose(rstruc);
 		fclose(rcor);
 }
-bool checksum(char odd,char even,char *pkt,int size)
+bool checksum(char odd,char even,char first,char second,char *pkt,int size)
 {
-		int checkodd=0,checkeven=0;
+		int checkodd=0,checkeven=0,checkfirst=0,checksecond=0;
 		for(int i=1;i<size;i+=2){
 				checkodd+=pkt[i];
 		}
 		for(int i=0;i<size;i+=2){
 				checkeven+=pkt[i];
 		}
+		for(int i=0;i<size/2;i++){
+				checkfirst+=i*pkt[i];
+		}
+		for(int i=size/2;i<size;i++){
+				checksecond+=i*pkt[i];
+		}
+
 		fprintf(rlog,"check %x %x  calc %x %x\n",odd,even,checkodd & 0xFF,checkeven & 0xFF);
 		fflush(rlog);
-		return ((checkodd & 0xFF)==(odd&0xFF)) && ((checkeven & 0xFF)==(even&0xFF));
+		return ((checkodd & 0xFF)==(odd&0xFF)) && ((checkeven & 0xFF)==(even&0xFF)) && ((checkfirst & 0xFF)==(first&0xFF)) && ((checksecond & 0xFF)==(second&0xFF));
 }
 
 void Receiver_MergePkt(struct mypacket *mpkt)
@@ -105,7 +115,7 @@ void Receiver_MergePkt(struct mypacket *mpkt)
 		//mark[?][0] =>first not 1
 
 		if(pmsg->size > mpkt->payload_size+(seqnum-1)*maxpayload_size){
-				memcpy(pmsg->data+(seqnum-1)*maxpayload_size,mpkt->data,maxpayload_size);
+				memcpy(pmsg->data+(seqnum-1)*maxpayload_size,mpkt->data+header_size,maxpayload_size);
 		}
 		else{
 				pmsg->size=mpkt->payload_size+(seqnum-1)*maxpayload_size;
@@ -113,7 +123,7 @@ void Receiver_MergePkt(struct mypacket *mpkt)
 						pmsg->data=(char *)malloc(pmsg->size);
 				else	
 						pmsg->data=(char *)realloc(pmsg->data,pmsg->size);
-				memcpy(pmsg->data+(seqnum-1)*maxpayload_size,mpkt->data,mpkt->payload_size);
+				memcpy(pmsg->data+(seqnum-1)*maxpayload_size,mpkt->data+header_size,mpkt->payload_size);
 		}
 		mark[bucketnum][seqnum]=1;
 		for(int i=1;i<20;i++){
@@ -150,13 +160,19 @@ void pktFormat(struct packet *pkt,struct mypacket *mpkt)
 		mpkt->msgnum=pkt->data[1] & 0xFF;
 		mpkt->seqnum=pkt->data[2] & 0xFF;
 		mpkt->globalcnt=(pkt->data[6] & 0xFF)+
-						((pkt->data[7] &0xFF)<<8)+
-						((pkt->data[8] &0xFF)<<16)+
-						((pkt->data[9] &0xFF)<<24);
+				((pkt->data[7] &0xFF)<<8)+
+				((pkt->data[8] &0xFF)<<16)+
+				((pkt->data[9] &0xFF)<<24);
 		mpkt->tot=pkt->data[3];
 		mpkt->odd=pkt->data[4];
 		mpkt->even=pkt->data[5];
-		memcpy(mpkt->data,pkt->data+header_size,maxpayload_size);
+		mpkt->first=pkt->data[10];
+		mpkt->second=pkt->data[11];
+		memcpy(mpkt->data,pkt->data,RDT_PKTSIZE);
+		mpkt->data[4]=1;
+		mpkt->data[5]=1;
+		mpkt->data[10]=0;
+		mpkt->data[11]=3;
 		fprintf(rlog,"pktfor size%d msgnum%d seqnum%d tot%d glcnt%d\n",mpkt->payload_size,mpkt->msgnum,mpkt->seqnum,mpkt->tot,mpkt->globalcnt);
 		fflush(rlog);
 }
@@ -180,20 +196,37 @@ bool contain(int *vec,int num)
 		}
 		return false;
 }
-char checksum_odd(char *pkt,int num)
+char checksum_odd(char *pkt)
 {
 		int checksum=0;
-		for(int i=1;i<num;i+=2){
+		for(int i=1;i<RDT_PKTSIZE;i+=2){
 				checksum+=pkt[i];
 		}
 		return checksum & 0xFF;
 }
 
-char checksum_even(char *pkt,int num)
+char checksum_even(char *pkt)
 {
 		int checksum=0;
-		for(int i=0;i<num;i+=2){
+		for(int i=0;i<RDT_PKTSIZE;i+=2){
 				checksum+=pkt[i];
+		}
+		return checksum & 0xFF;
+}
+char checksum_first(char *pkt)
+{
+		int checksum=0;
+		for(int i=0;i<RDT_PKTSIZE/2;i++){
+				checksum+=i*pkt[i];
+		}
+		return checksum & 0xFF;
+}
+
+char checksum_second(char *pkt)
+{
+		int checksum=0;
+		for(int i=RDT_PKTSIZE/2;i<RDT_PKTSIZE;i++){
+				checksum+=i*pkt[i];
 		}
 		return checksum & 0xFF;
 }
@@ -204,16 +237,18 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 {
 		struct mypacket *mpkt=(struct mypacket*)malloc(sizeof(struct mypacket));
 		pktFormat(pkt,mpkt);
-		bool check=checksum(mpkt->odd,mpkt->even,mpkt->data,maxpayload_size);
+#if 1
+		bool check=checksum(mpkt->odd,mpkt->even,mpkt->first,mpkt->second,mpkt->data,RDT_PKTSIZE);
 		if(check==false){
 				fprintf(rlog,"corrupt\n");
 				return;
 		}
+#endif 
 		fprintf(rlog,"msgnum%d seqnum%d\n",mpkt->msgnum,mpkt->seqnum);
-/*		for(int i=0;i<mpkt->payload_size;i++){
+		/*		for(int i=0;i<mpkt->payload_size;i++){
 				fprintf(rlog,"%c",mpkt->data[i]);
-		}
-		fprintf(rlog,"\n");*/
+				}
+				fprintf(rlog,"\n");*/
 		Receiver_MergePkt(mpkt);
 
 		//next handle returning msg
@@ -234,9 +269,18 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 		anspkt->data[1] = (acknum>>8)&0xFF;
 		anspkt->data[2] = (acknum>>16)&0xFF;
 		anspkt->data[3] = (acknum>>24)&0xFF;
-
-		anspkt->data[4] = checksum_odd(anspkt->data+6,RDT_PKTSIZE-6);
-		anspkt->data[5] = checksum_even(anspkt->data+6,RDT_PKTSIZE-6);
+		anspkt->data[4] = 1;
+		anspkt->data[5] = 1;
+		anspkt->data[6] = 0;
+		anspkt->data[7] = 3;
+		char odd=checksum_odd(anspkt->data);
+		char even=checksum_even(anspkt->data);
+		char first=checksum_first(anspkt->data);
+		char second=checksum_second(anspkt->data);
+		anspkt->data[4] = odd; 
+		anspkt->data[5] = even;
+		anspkt->data[6] = first;
+		anspkt->data[7] = second;
 		Receiver_ToLowerLayer(anspkt);
 		fprintf(rcor,"lpr%d receive%d ack%d\n",lpr,glcnt,acknum);
 		fprintf(rcor,"clear %dbuf ",acknum-lpr);

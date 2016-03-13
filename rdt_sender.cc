@@ -23,7 +23,7 @@
 #define window 1000 
 #define timerwindow 1000
 #define timeout 0.3
-int sheader_size=10;
+int sheader_size=12;
 unsigned int globalcnt=1;
 int lar=-1;
 int slpr=0;
@@ -74,23 +74,41 @@ void Sender_Final()
 		fclose(timelog);
 }
 
-char schecksum_odd(char *pkt,int num)
+char schecksum_odd(char *pkt)
 {
 		int checksum=0;
-		for(int i=1;i<num;i+=2){
+		for(int i=1;i<RDT_PKTSIZE;i+=2){
 				checksum+=pkt[i];
 		}
 		return checksum & 0xFF;
 }
 
-char schecksum_even(char *pkt,int num)
+char schecksum_even(char *pkt)
 {
 		int checksum=0;
-		for(int i=0;i<num;i+=2){
+		for(int i=0;i<RDT_PKTSIZE;i+=2){
 				checksum+=pkt[i];
 		}
 		return checksum & 0xFF;
 }
+char schecksum_first(char *pkt)
+{
+		int checksum=0;
+		for(int i=0;i<RDT_PKTSIZE/2;i++){
+				checksum+=i*pkt[i];
+		}
+		return checksum & 0xFF;
+}
+
+char schecksum_second(char *pkt)
+{
+		int checksum=0;
+		for(int i=RDT_PKTSIZE/2;i<RDT_PKTSIZE;i++){
+				checksum+=i*pkt[i];
+		}
+		return checksum & 0xFF;
+}
+
 
 
 /* event handler, called when a message is passed from the upper layer at the 
@@ -111,9 +129,19 @@ void Sender_FromUpperLayer(struct message *msg)
 				pkt->data[8] = (globalcnt>>16)&0xFF;
 				pkt->data[9] = (globalcnt>>24)&0xFF;
 				pkt->data[3] = tot;
+				pkt->data[4] = 1;
+				pkt->data[5] = 1;
+				pkt->data[10] = 0;
+				pkt->data[11] = 3;
 				memcpy(pkt->data+sheader_size, msg->data+cursor, smaxpayload_size);
-				pkt->data[4] = schecksum_odd(pkt->data+sheader_size,smaxpayload_size);
-				pkt->data[5] = schecksum_even(pkt->data+sheader_size,smaxpayload_size);
+				char odd = schecksum_odd(pkt->data);
+				char even = schecksum_even(pkt->data);
+				char first = schecksum_first(pkt->data);
+				char second = schecksum_second(pkt->data);
+				pkt->data[4] = odd; 
+				pkt->data[5] = even;				
+				pkt->data[10] = first;
+				pkt->data[11] = second;
 				Sender_ToLowerLayer(pkt);
 				cursor += smaxpayload_size;
 				seqnum++;
@@ -122,10 +150,10 @@ void Sender_FromUpperLayer(struct message *msg)
 				//sendbuf[i]'s space is allocated in init() and we keep using them
 				int bucketnum=globalcnt - slpr-1;
 				if(bucketnum<window){
-				sendbuf[bucketnum]->globalcnt=globalcnt;
-				sendbuf[bucketnum]->pkt=pkt;
-				fprintf(scor,"sending glcnt %d\n",globalcnt);
-				globalcnt++;
+						sendbuf[bucketnum]->globalcnt=globalcnt;
+						sendbuf[bucketnum]->pkt=pkt;
+						fprintf(scor,"sending glcnt %d\n",globalcnt);
+						globalcnt++;
 				}
 				else	fprintf(scor,"sending allert!!\n");
 		}
@@ -139,17 +167,27 @@ void Sender_FromUpperLayer(struct message *msg)
 				pkt->data[8] = (globalcnt>>16)&0xFF;
 				pkt->data[9] = (globalcnt>>24)&0xFF;
 				pkt->data[3] = tot;
+				pkt->data[4] = 1;
+				pkt->data[5] = 1;
+				pkt->data[10] = 0;
+				pkt->data[11] = 3;
 				memcpy(pkt->data+sheader_size, msg->data+cursor, pkt->data[0]);
-				pkt->data[4] = schecksum_odd(pkt->data+sheader_size,smaxpayload_size);
-				pkt->data[5] = schecksum_even(pkt->data+sheader_size,smaxpayload_size);
+				char odd = schecksum_odd(pkt->data);
+				char even = schecksum_even(pkt->data);
+				char first = schecksum_first(pkt->data);
+				char second = schecksum_second(pkt->data);
+				pkt->data[4] = odd; 
+				pkt->data[5] = even;				
+				pkt->data[10] = first;
+				pkt->data[11] = second;
 				Sender_ToLowerLayer(pkt);
 				fprintf(slog,"check %x %x\n",pkt->data[4],pkt->data[5]);
 				int bucketnum=globalcnt - slpr-1;
 				if(bucketnum<window){
-				sendbuf[bucketnum]->globalcnt=globalcnt;
-				sendbuf[bucketnum]->pkt=pkt;
-				fprintf(scor,"sending glcnt %d\n",globalcnt);
-				globalcnt++;
+						sendbuf[bucketnum]->globalcnt=globalcnt;
+						sendbuf[bucketnum]->pkt=pkt;
+						fprintf(scor,"sending glcnt %d\n",globalcnt);
+						globalcnt++;
 				}
 				else	fprintf(scor,"sending allert!!\n");
 
@@ -163,7 +201,7 @@ void Sender_FromUpperLayer(struct message *msg)
 		fflush(scor);
 		msgnum++;
 #if 1
-//timer
+		//timer
 		fprintf(timelog,"sending glcnt%d pktnum%d curtime%f cursize%d\n",globalcnt-tot,tot,GetSimulationTime(),timersize);
 		if(timersize>=timerwindow)	fprintf(timelog,"sending timersize too big\n");
 		timerlist[timersize]->glcnt=globalcnt-tot;
@@ -214,32 +252,49 @@ void Sender_FromUpperLayer(struct message *msg)
 		msgnum++;
 #endif
 }
-bool schecksum(char odd,char even,char *pkt,int size)
+bool schecksum(char odd,char even,char first,char second,char *pkt,int size)
 {
-		int checkodd=0,checkeven=0;
+		int checkodd=0,checkeven=0,checkfirst=0,checksecond=0;
 		for(int i=1;i<size;i+=2){
 				checkodd+=pkt[i];
 		}
 		for(int i=0;i<size;i+=2){
 				checkeven+=pkt[i];
 		}
-		return ((checkodd & 0xFF)==(odd & 0xFF)) && ((checkeven & 0xFF)==(even & 0xFF));
+		for(int i=0;i<size/2;i++){
+				checkfirst+=i*pkt[i];
+		}
+		for(int i=size/2;i<size;i++){
+				checksecond+=i*pkt[i];
+		}
+
+		return ((checkodd & 0xFF)==(odd&0xFF)) && ((checkeven & 0xFF)==(even&0xFF)) && ((checkfirst & 0xFF)==(first&0xFF)) && ((checksecond & 0xFF)==(second&0xFF));
 }
 
 /* event handler, called when a packet is passed from the lower layer at the 
    sender */
 void Sender_FromLowerLayer(struct packet *pkt)
 {
-//ack packet format :4bytes ack,2byte checksum
+		//ack packet format :4bytes ack,2byte checksum
 		int acknum=(pkt->data[0]&0xFF)+
-					((pkt->data[1]&0xFF)<<8)+
-					((pkt->data[2]&0xFF)<<16)+
-					((pkt->data[3]&0xFF)<<24);
-		bool check=schecksum(pkt->data[4],pkt->data[5],pkt->data+6,RDT_PKTSIZE-6);
+				((pkt->data[1]&0xFF)<<8)+
+				((pkt->data[2]&0xFF)<<16)+
+				((pkt->data[3]&0xFF)<<24);
+		char odd=pkt->data[4];
+		char even=pkt->data[5];
+		char first=pkt->data[6];
+		char second=pkt->data[7];
+		pkt->data[4]=1;
+		pkt->data[5]=1;
+		pkt->data[6]=0;
+		pkt->data[7]=3;
+#if 1
+		bool check=schecksum(odd,even,first,second,pkt->data,RDT_PKTSIZE);
 		if(check == false ){
 				fprintf(scor,"receiving corrupt\n");
 				return;
 		}
+#endif
 		fprintf(scor,"receiving ack%d lpr%d\n",acknum,slpr);
 		if(slpr>=acknum)	return;
 		int clear=acknum-slpr;
