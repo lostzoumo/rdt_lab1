@@ -5,7 +5,7 @@
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
 ASSERT	rdt_struct.h	12;"	d
-CCFLAGS	Makefile	/^CCFLAGS = -Wall -g$/;"	m
+CCFLAGS	Makefile	/^CCFLAGS = -Wall -g -rdynamic$/;"	m
 EVENT_RECEIVER_FROMLOWERLAYER	rdt_sim.cc	/^		EVENT_SENDER_TIMEOUT, EVENT_RECEIVER_FROMLOWERLAYER};$/;"	e	enum:__anon1	file:
 EVENT_SENDER_FROMLOWERLAYER	rdt_sim.cc	/^enum {EVENT_SENDER_FROMUPPERLAYER=0, EVENT_SENDER_FROMLOWERLAYER, $/;"	e	enum:__anon1	file:
 EVENT_SENDER_FROMUPPERLAYER	rdt_sim.cc	/^enum {EVENT_SENDER_FROMUPPERLAYER=0, EVENT_SENDER_FROMLOWERLAYER, $/;"	e	enum:__anon1	file:
@@ -23,7 +23,7 @@ EventSenderFromUpperLayer	rdt_sim.cc	/^class EventSenderFromUpperLayer : public 
 EventSenderTimeout	rdt_sim.cc	/^				EventSenderTimeout() { event_type = EVENT_SENDER_TIMEOUT; }$/;"	f	class:EventSenderTimeout
 EventSenderTimeout	rdt_sim.cc	/^class EventSenderTimeout : public Event$/;"	c	file:
 GetSimulationTime	rdt_sim.cc	/^double GetSimulationTime()$/;"	f
-LDFLAGS	Makefile	/^LDFLAGS = -Wall -g$/;"	m
+LDFLAGS	Makefile	/^LDFLAGS = -Wall -g -rdynamic$/;"	m
 RDT_PKTSIZE	rdt_struct.h	27;"	d
 Receiver_Final	rdt_receiver.cc	/^void Receiver_Final()$/;"	f
 Receiver_FromLowerLayer	rdt_receiver.cc	/^void Receiver_FromLowerLayer(struct packet *pkt)$/;"	f
@@ -47,15 +47,15 @@ _RDT_STRUCT_H_	rdt_struct.h	9;"	d
 ack	rdt_receiver.cc	/^unsigned int ack(int *vec,int num)$/;"	f
 bucket	rdt_receiver.cc	/^struct message * bucket[window];$/;"	v	typeref:struct:message
 cancel	rdt_sim.cc	/^				void cancel(Event *e) {$/;"	f	class:EventChain
-checksum	rdt_receiver.cc	/^bool checksum(char odd,char even,char *pkt,int size)$/;"	f
-checksum_even	rdt_receiver.cc	/^char checksum_even(char *pkt,int num)$/;"	f
-checksum_odd	rdt_receiver.cc	/^char checksum_odd(char *pkt,int num)$/;"	f
-contain	rdt_receiver.cc	/^bool contain(int *vec,int num)$/;"	f
+check	checksum.cc	/^bool check(struct packet *pkt){$/;"	f
+checksum	checksum.cc	/^void checksum(struct packet *pkt){$/;"	f
+checksum_8	checksum.cc	/^unsigned int checksum_8(unsigned int cksum, char *data,unsigned int size){$/;"	f
+checksum_even	checksum.cc	/^char checksum_even(char *pkt)$/;"	f
+checksum_odd	checksum.cc	/^char checksum_odd(char *pkt)$/;"	f
 corrupt_rate	rdt_sim.cc	/^double corrupt_rate;$/;"	v
 data	rdt_receiver.cc	/^		char data[RDT_PKTSIZE-header_size];$/;"	m	struct:mypacket	file:
 data	rdt_struct.h	/^    char *data;$/;"	m	struct:message
 data	rdt_struct.h	/^    char data[RDT_PKTSIZE];$/;"	m	struct:packet
-even	rdt_receiver.cc	/^		char even;$/;"	m	struct:mypacket	file:
 event_type	rdt_sim.cc	/^				int event_type;         \/* application-specific event type *\/$/;"	m	class:Event	file:
 free_msg	rdt_sim.cc	/^static void free_msg(struct message *msg)$/;"	f	file:
 generate_msg	rdt_sim.cc	/^static struct message *generate_msg()$/;"	f	file:
@@ -64,7 +64,7 @@ globalcnt	rdt_receiver.cc	/^		int globalcnt;$/;"	m	struct:mypacket	file:
 globalcnt	rdt_sender.cc	/^		int globalcnt;$/;"	m	struct:mypacket	file:
 globalcnt	rdt_sender.cc	/^unsigned int globalcnt=1;$/;"	v
 head	rdt_sim.cc	/^				Event *head;            \/* head event in the chain *\/$/;"	m	class:EventChain	file:
-header_size	rdt_receiver.cc	28;"	d	file:
+header_size	rdt_receiver.cc	29;"	d	file:
 lam	rdt_receiver.cc	/^int lam=lmr+window;\/\/last acceptable message$/;"	v
 lar	rdt_sender.cc	/^int lar=-1;$/;"	v
 lmr	rdt_receiver.cc	/^int lmr=-1;\/\/last message received$/;"	v
@@ -83,7 +83,6 @@ mypacket	rdt_sender.cc	/^struct mypacket{$/;"	s	file:
 myrandom	rdt_sim.cc	/^static double myrandom()$/;"	f	file:
 next	rdt_sim.cc	/^				class Event *next;      \/* next event in the chain *\/$/;"	m	class:Event	typeref:class:Event::Event	file:
 next_event	rdt_sim.cc	/^				Event *next_event() {$/;"	f	class:EventChain
-odd	rdt_receiver.cc	/^		char odd;$/;"	m	struct:mypacket	file:
 outoforder_rate	rdt_sim.cc	/^double outoforder_rate;$/;"	v
 packet	rdt_struct.h	/^struct packet {$/;"	s
 payload_size	rdt_receiver.cc	/^		int payload_size;$/;"	m	struct:mypacket	file:
@@ -96,16 +95,13 @@ pktnum	rdt_sender.cc	/^		int pktnum;$/;"	m	struct:timer	file:
 rcor	rdt_receiver.cc	/^FILE *rcor;$/;"	v
 recbuf	rdt_receiver.cc	/^int recbuf[window];$/;"	v
 rstruc	rdt_receiver.cc	/^FILE *rstruc;$/;"	v
-schecksum	rdt_sender.cc	/^bool schecksum(char odd,char even,char *pkt,int size)$/;"	f
-schecksum_even	rdt_sender.cc	/^char schecksum_even(char *pkt,int num)$/;"	f
-schecksum_odd	rdt_sender.cc	/^char schecksum_odd(char *pkt,int num)$/;"	f
 sched_time	rdt_sim.cc	/^				double sched_time;      \/* scheduled occuring time *\/$/;"	m	class:Event	file:
 schedule	rdt_sim.cc	/^				void schedule(Event *e) {$/;"	f	class:EventChain
 scor	rdt_sender.cc	/^FILE *scor;$/;"	v
 sendbuf	rdt_sender.cc	/^struct mypacket* sendbuf[window];$/;"	v	typeref:struct:mypacket
 sender_timer	rdt_sim.cc	/^Event *sender_timer = NULL;$/;"	v
 seqnum	rdt_receiver.cc	/^		int seqnum;$/;"	m	struct:mypacket	file:
-sheader_size	rdt_sender.cc	/^int sheader_size=10;$/;"	v
+sheader_size	rdt_sender.cc	/^int sheader_size=12;$/;"	v
 sim_core	rdt_sim.cc	/^EventChain sim_core;$/;"	v
 sim_time	rdt_sim.cc	/^				double sim_time;        \/* simulation time *\/$/;"	m	class:EventChain	file:
 sim_time	rdt_sim.cc	/^double sim_time;$/;"	v
@@ -116,16 +112,16 @@ smaxpayload_size	rdt_sender.cc	/^int smaxpayload_size=RDT_PKTSIZE - sheader_size
 time	rdt_sender.cc	/^		double time;$/;"	m	struct:timer	file:
 time	rdt_sim.cc	/^				double time() { return sim_time; }$/;"	f	class:EventChain
 timelog	rdt_sender.cc	/^FILE *timelog;$/;"	v
-timeout	rdt_sender.cc	25;"	d	file:
+timeout	rdt_sender.cc	26;"	d	file:
 timer	rdt_sender.cc	/^struct timer{$/;"	s	file:
-timerlist	rdt_sender.cc	/^struct timer* timerlist[timerwindow];$/;"	v	typeref:struct:timer
+timerlist	rdt_sender.cc	/^struct timer* timerlist[timerwindow+1];$/;"	v	typeref:struct:timer
 timersize	rdt_sender.cc	/^int timersize=0;$/;"	v
-timerwindow	rdt_sender.cc	24;"	d	file:
+timerwindow	rdt_sender.cc	25;"	d	file:
 tot	rdt_receiver.cc	/^		int tot;$/;"	m	struct:mypacket	file:
 tot_chars_delivered	rdt_sim.cc	/^int tot_chars_delivered = 0;$/;"	v
 tot_chars_sent	rdt_sim.cc	/^int tot_chars_sent = 0;$/;"	v
 tot_pkts_passed	rdt_sim.cc	/^int tot_pkts_passed = 0;$/;"	v
 tracing_level	rdt_sim.cc	/^int tracing_level;$/;"	v
 ver	rdt_sim.cc	/^FILE *ver;$/;"	v
-window	rdt_receiver.cc	41;"	d	file:
-window	rdt_sender.cc	23;"	d	file:
+window	rdt_receiver.cc	40;"	d	file:
+window	rdt_sender.cc	24;"	d	file:

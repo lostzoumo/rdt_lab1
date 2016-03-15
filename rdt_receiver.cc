@@ -26,7 +26,7 @@ using namespace std;
 FILE *rlog;
 FILE *rstruc;
 FILE *rcor;
-#define header_size 12
+#define header_size 14
 int maxpayload_size=RDT_PKTSIZE-header_size;
 /* receiver initialization, called once at the very beginning */
 struct mypacket{
@@ -35,8 +35,6 @@ struct mypacket{
 		int seqnum;
 		int globalcnt;
 		int tot;
-		//char odd;
-		//char even;
 		char data[RDT_PKTSIZE-header_size];
 };
 #define window 100
@@ -76,19 +74,6 @@ void Receiver_Final()
 		fclose(rstruc);
 		fclose(rcor);
 }
-/*bool checksum(char odd,char even,char *pkt,int size)
-{
-		int checkodd=0,checkeven=0;
-		for(int i=1;i<size;i+=2){
-				checkodd+=pkt[i];
-		}
-		for(int i=0;i<size;i+=2){
-				checkeven+=pkt[i];
-		}
-		fprintf(rlog,"check %x %x  calc %x %x\n",odd,even,checkodd & 0xFF,checkeven & 0xFF);
-		fflush(rlog);
-		return ((checkodd & 0xFF)==(odd&0xFF)) && ((checkeven & 0xFF)==(even&0xFF));
-}*/
 
 void Receiver_MergePkt(struct mypacket *mpkt)
 {
@@ -155,8 +140,6 @@ void pktFormat(struct packet *pkt,struct mypacket *mpkt)
 						((pkt->data[8] &0xFF)<<16)+
 						((pkt->data[9] &0xFF)<<24);
 		mpkt->tot=pkt->data[3];
-		//mpkt->odd=pkt->data[4];
-		//mpkt->even=pkt->data[5];
 		memcpy(mpkt->data,pkt->data+header_size,maxpayload_size);
 		fprintf(rlog,"pktfor size%d msgnum%d seqnum%d tot%d glcnt%d\n",mpkt->payload_size,mpkt->msgnum,mpkt->seqnum,mpkt->tot,mpkt->globalcnt);
 		fflush(rlog);
@@ -174,38 +157,19 @@ unsigned int ack(int *vec,int num)
 		}
 		return ret;
 }
+
 bool contain(int *vec,int num)
 {
 		for(int i=0;i<window;i++){
-				if(vec[i]==num)	return true;
+				if(vec[i]==num) return true;
 		}
 		return false;
 }
-char checksum_odd(char *pkt,int num)
-{
-		int checksum=0;
-		for(int i=1;i<num;i+=2){
-				checksum+=pkt[i];
-		}
-		return checksum & 0xFF;
-}
-
-char checksum_even(char *pkt,int num)
-{
-		int checksum=0;
-		for(int i=0;i<num;i+=2){
-				checksum+=pkt[i];
-		}
-		return checksum & 0xFF;
-}
-
 /* event handler, called when a packet is passed from the lower layer at the 
    receiver */
 void Receiver_FromLowerLayer(struct packet *pkt)
 {
 		struct mypacket *mpkt=(struct mypacket*)malloc(sizeof(struct mypacket));
-		//pktFormat(pkt,mpkt);
-		//bool check=checksum(mpkt->odd,mpkt->even,mpkt->data,maxpayload_size);
 		bool check1=check(pkt);
 		if(check1==false){
 				fprintf(rlog,"corrupt\n");
@@ -213,10 +177,6 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 		}
 		pktFormat(pkt,mpkt);
 		fprintf(rlog,"msgnum%d seqnum%d\n",mpkt->msgnum,mpkt->seqnum);
-/*		for(int i=0;i<mpkt->payload_size;i++){
-				fprintf(rlog,"%c",mpkt->data[i]);
-		}
-		fprintf(rlog,"\n");*/
 		Receiver_MergePkt(mpkt);
 
 		//next handle returning msg
@@ -238,8 +198,6 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 		anspkt->data[2] = (acknum>>16)&0xFF;
 		anspkt->data[3] = (acknum>>24)&0xFF;
 		checksum(anspkt);
-//		anspkt->data[4] = checksum_odd(anspkt->data+6,RDT_PKTSIZE-6);
-//		anspkt->data[5] = checksum_even(anspkt->data+6,RDT_PKTSIZE-6);
 		Receiver_ToLowerLayer(anspkt);
 		fprintf(rcor,"lpr%d receive%d ack%d\n",lpr,glcnt,acknum);
 		fprintf(rcor,"clear %dbuf ",acknum-lpr);
@@ -259,31 +217,4 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 		fprintf(rcor,"\n");
 		lpr=acknum;
 		fflush(rcor);
-		/* int header_size = 6;
-
-		   struct message *msg = (struct message*) malloc(sizeof(struct message));
-		   ASSERT(msg!=NULL);
-
-		   msg->size = pkt->data[0];
-
-		   if (msg->size<0) msg->size=0;
-		   if (msg->size>RDT_PKTSIZE-header_size) msg->size=RDT_PKTSIZE-header_size;
-		   char odd = pkt->data[4];
-		   char even = pkt->data[5];
-		   char msgnum = pkt->data[1];
-		   char seqnum = pkt->data[2];
-		   char tot = pkt->data[3];
-		   bool check=checksum(odd,even,pkt->data+header_size,RDT_PKTSIZE-header_size);
-		   fprintf(rlog,"msg%d packet%d received %s tot%d\n",msgnum,seqnum,check==true?"good":"corrupt",tot);
-		   if(check==false){
-		   return;
-		   }
-
-		   msg->data = (char*) malloc(msg->size);
-		   ASSERT(msg->data!=NULL);
-		   memcpy(msg->data, pkt->data+header_size, msg->size);
-		   Receiver_ToUpperLayer(msg);
-
-		   if (msg->data!=NULL) free(msg->data);
-		   if (msg!=NULL) free(msg);*/
 }

@@ -24,7 +24,7 @@
 #define window 1000 
 #define timerwindow 1000
 #define timeout 0.3
-int sheader_size=12;
+int sheader_size=14;
 unsigned int globalcnt=1;
 int lar=-1;
 int slpr=0;
@@ -75,23 +75,6 @@ void Sender_Final()
 		fclose(timelog);
 }
 
-char schecksum_odd(char *pkt,int num)
-{
-		int checksum=0;
-		for(int i=1;i<num;i+=2){
-				checksum+=pkt[i];
-		}
-		return checksum & 0xFF;
-}
-
-char schecksum_even(char *pkt,int num)
-{
-		int checksum=0;
-		for(int i=0;i<num;i+=2){
-				checksum+=pkt[i];
-		}
-		return checksum & 0xFF;
-}
 
 
 /* event handler, called when a message is passed from the upper layer at the 
@@ -113,8 +96,6 @@ void Sender_FromUpperLayer(struct message *msg)
 				pkt->data[9] = (globalcnt>>24)&0xFF;
 				pkt->data[3] = tot;
 				memcpy(pkt->data+sheader_size, msg->data+cursor, smaxpayload_size);
-				//pkt->data[4] = schecksum_odd(pkt->data+sheader_size,smaxpayload_size);
-				//pkt->data[5] = schecksum_even(pkt->data+sheader_size,smaxpayload_size);
 				checksum(pkt);
 				Sender_ToLowerLayer(pkt);
 				cursor += smaxpayload_size;
@@ -142,8 +123,6 @@ void Sender_FromUpperLayer(struct message *msg)
 				pkt->data[9] = (globalcnt>>24)&0xFF;
 				pkt->data[3] = tot;
 				memcpy(pkt->data+sheader_size, msg->data+cursor, pkt->data[0]);
-				//pkt->data[4] = schecksum_odd(pkt->data+sheader_size,smaxpayload_size);
-				//pkt->data[5] = schecksum_even(pkt->data+sheader_size,smaxpayload_size);
 				checksum(pkt);
 				Sender_ToLowerLayer(pkt);
 				fprintf(slog,"check %x %x\n",pkt->data[4],pkt->data[5]);
@@ -176,64 +155,13 @@ void Sender_FromUpperLayer(struct message *msg)
 		timersize++;
 		fflush(timelog);
 #endif
-#if 0    
-		static int msgnum=0;
-
-
-		packet pkt;
-
-		int cursor = 0;
-		int seqnum=1;
-		int tot=(msg->size+maxpayload_size-1)/maxpayload_size;
-		while (msg->size-cursor > maxpayload_size) {
-				pkt.data[0] = maxpayload_size;
-				pkt.data[1] = msgnum%256;
-				pkt.data[2] = seqnum;
-				pkt.data[3] = tot;
-				memcpy(pkt.data+header_size, msg->data+cursor, maxpayload_size);
-				pkt.data[4] = checksum_odd(pkt.data+header_size,maxpayload_size);
-				pkt.data[5] = checksum_even(pkt.data+header_size,maxpayload_size);
-				Sender_ToLowerLayer(&pkt);
-
-				cursor += maxpayload_size;
-				seqnum++;
-		}
-
-		if (msg->size > cursor) {
-				pkt.data[0] = msg->size-cursor;
-				pkt.data[1] = msgnum%256;
-				pkt.data[2] = seqnum;
-				pkt.data[3] = tot;
-				memcpy(pkt.data+header_size, msg->data+cursor, pkt.data[0]);
-				pkt.data[4] = checksum_odd(pkt.data+header_size,maxpayload_size);
-				pkt.data[5] = checksum_even(pkt.data+header_size,maxpayload_size);
-				Sender_ToLowerLayer(&pkt);
-		}
-		fprintf(slog,"msg%d sent in %d packet\n",msgnum,seqnum);
-		for(int i=0;i<msg->size;i++){
-				fprintf(slog,"%c",msg->data[i]);
-		}
-		fprintf(slog,"\n");
-		msgnum++;
-#endif
-}
-bool schecksum(char odd,char even,char *pkt,int size)
-{
-		int checkodd=0,checkeven=0;
-		for(int i=1;i<size;i+=2){
-				checkodd+=pkt[i];
-		}
-		for(int i=0;i<size;i+=2){
-				checkeven+=pkt[i];
-		}
-		return ((checkodd & 0xFF)==(odd & 0xFF)) && ((checkeven & 0xFF)==(even & 0xFF));
 }
 
 /* event handler, called when a packet is passed from the lower layer at the 
    sender */
 void Sender_FromLowerLayer(struct packet *pkt)
 {
-//ack packet format :4bytes ack,2byte checksum
+//ack packet format :4bytes ack,4byte checksum
 		int acknum=(pkt->data[0]&0xFF)+
 					((pkt->data[1]&0xFF)<<8)+
 					((pkt->data[2]&0xFF)<<16)+
